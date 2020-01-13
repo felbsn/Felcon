@@ -42,6 +42,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Core\DataTypes.cs" />
+    <Compile Include="Core\FServerService.cs" />
     <Compile Include="Definitions\Tokens.cs" />
     <Compile Include="Extensions\EventHandlerExtensions.cs" />
     <Compile Include="Core\FClient.cs" />

@@ -36,6 +36,7 @@ namespace Felcon.Core
         {
             try
             {
+                Initialize();
                 clientPipeStream.Connect(ms);
                 OnConnect();
                 Listen();
@@ -75,12 +76,15 @@ namespace Felcon.Core
         // Connection checks
         public bool EnsureConnection()
         {
-            if (!pipeStream.IsConnected)
+            if (!IsConnected)
             {
+                if(Connect(100))
+                {
+                    return true;
+                }else
                 if (CheckServerApplication())
                 {
                     return Connect(2000);
-
                 }
                 else
                 {

@@ -22,22 +22,28 @@ namespace ClientExample
             var pipe = slavePipe;
             pipe.DataReceived += (s, e) =>
             {
-                consoleTextBox.Invoke(consoleTextBox => consoleTextBox.Text +=
-                $"[{DateTime.Now.ToLongTimeString()}](INCOMING)-> act:{e.action}, payload:{e.payload}\r\n");
+                WriteConsole("Receive", "Server", e.action, e.payload);
+
+
+                if (e.method == Felcon.Definitions.Tokens.Request)
+                {
+                    e.response.action = "M";
+                    e.response.payload = "ben de bir clientim";
+
+                    WriteConsole("Automatic Response", "Server", e.response.action, e.response.payload);
+                 
+                }
             };
 
             pipe.Connected += (s, e) =>
             {
-                consoleTextBox.Invoke(consoleTextBox => consoleTextBox.Text +=
-                $"[{DateTime.Now.ToLongTimeString()}](EVENT)-> Connected\r\n");
+                WriteConsole("Connected", "evet");
 
-                
             };
 
             pipe.Disconnected += (s, e) =>
             {
-                consoleTextBox.Invoke(consoleTextBox => consoleTextBox.Text +=
-              $"[{DateTime.Now.ToLongTimeString()}](EVENT)-> Disconnected\r\n");
+                WriteConsole("Disconnect", "oyle");
             };
         }
 
@@ -57,8 +63,12 @@ namespace ClientExample
                 {
                     var txt = connectionTextBox.Text;
                     slavePipe.PipeAddress = txt;
-                    slavePipe.Initialize();
-                    slavePipe.Connect(1000);
+
+                    slavePipe.ServerProcessName = "ServerServiceExample";
+                    slavePipe.ServerRegeditPath = @"Software\testv0";
+                    slavePipe.ServerRegeditPathKey = "path";
+
+                    slavePipe.Connect(100);
  
                     btn.Text = "Disconnect";
                     btn.ForeColor = Color.Red;
@@ -68,11 +78,40 @@ namespace ClientExample
  
         }
 
+        public void WriteConsole(string eventName, string eventInfo)
+        {
+            consoleTextBox.Invoke(console =>
+            {
+                console.Text += $"[{DateTime.Now.ToLongTimeString()}]({eventName})-> {eventInfo}\r\n";
+                console.SelectionStart = console.Text.Length;
+                console.ScrollToCaret();
+            });
+        }
+        public void WriteConsole(string eventName, string targetName, string action, string payload)
+        {
+            consoleTextBox.Invoke(console =>
+            {
+
+                console.Text += $"[{DateTime.Now.ToLongTimeString()}]({eventName}::{targetName})-> act:{action}, payload:{payload}\r\n";
+                console.SelectionStart = console.Text.Length;
+                console.ScrollToCaret();
+            });
+        }
+
         private void sendButton_Click(object sender, EventArgs e)
         {
-            consoleTextBox.Invoke(consoleTextBox => consoleTextBox.Text +=
-            $"[{DateTime.Now.ToLongTimeString()}](OUTGOING)-> act:{actionTextBox.Text}, payload:{payloadTextBox.Text}\r\n");
-            slavePipe.send(actionTextBox.Text, payloadTextBox.Text);
+            WriteConsole("Send", "Server", actionTextBox.Text, payloadTextBox.Text);
+            slavePipe.SendMessage(actionTextBox.Text, payloadTextBox.Text);
+        }
+
+        private void requestButton_Click(object sender, EventArgs e)
+        {
+            WriteConsole("Request", "Server", actionTextBox.Text, payloadTextBox.Text);
+            slavePipe.SendRequestAsync(actionTextBox.Text, payloadTextBox.Text).ContinueWith(
+                t =>
+                {
+                    WriteConsole("Response", "Server", t.Result.action, t.Result.payload);
+                });
         }
     }
 

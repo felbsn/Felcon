@@ -35,7 +35,7 @@ namespace Felcon.Core
 
 
         // low level send event
-        public void send(string action, string payload , Definitions.Tokens token = Definitions.Tokens.Message)
+        protected void send(string action, string payload , Definitions.Tokens token)
         {
             var bActionPair = action.ToLengthValuePair();
             var bPayloadPair = payload.ToLengthValuePair();
@@ -51,12 +51,12 @@ namespace Felcon.Core
         // high level virtual functions , which expects return value
         public virtual void SendMessage(string action, string payload)
         {
-            send(action, payload);
+            send(action, payload , Tokens.Message);
         }
         public virtual Response SendRequest(string action, string payload)
         {
             waitHandle.Reset();
-            send(action, payload);
+            send(action, payload , Tokens.Request);
         
             waitHandle.WaitOne();
             var response = lastResponse;
@@ -80,7 +80,6 @@ namespace Felcon.Core
         protected PipeBase(string pipeAddress)
         {
             PipeAddress = pipeAddress;
- 
         }
 
         protected void OnConnect() => Connected?.Invoke(this, EventArgs.Empty);
@@ -94,9 +93,10 @@ namespace Felcon.Core
                     try
                     {
                         var messageLength = pipeStream.ReadI32();
-                        var messageToken  = pipeStream.ReadI32();
+                        var messageMethod  = pipeStream.ReadI32();
 
-                        switch ((Tokens)messageToken)
+                        var messageToken = (Tokens)messageMethod;
+                        switch (messageToken)
                         {
                             case Tokens.Message:
                                 { 
@@ -104,7 +104,7 @@ namespace Felcon.Core
                                 var action = pipeStream.ReadString(actionLength);
                                 var payloadLength = pipeStream.ReadI32();
                                 var payload = pipeStream.ReadString(payloadLength);
-                                DataReceived?.SafeInvoke(this, new DataEventArgs(action, payload));
+                                DataReceived?.SafeInvoke(this, new DataEventArgs(action, payload , messageToken));
                                 }
                                 break;
                             case Tokens.Request:
@@ -113,7 +113,8 @@ namespace Felcon.Core
                                     var action = pipeStream.ReadString(actionLength);
                                     var payloadLength = pipeStream.ReadI32();
                                     var payload = pipeStream.ReadString(payloadLength);
-                                    var args = new DataEventArgs(action, payload);
+                                    var args = new DataEventArgs(action, payload , messageToken);
+                              
                                     DataReceived?.SafeInvoke(this, args);
                                     send(args.response.action, args.response.payload , Tokens.Response);
                                 }
@@ -124,7 +125,7 @@ namespace Felcon.Core
                                     var action = pipeStream.ReadString(actionLength);
                                     var payloadLength = pipeStream.ReadI32();
                                     var payload = pipeStream.ReadString(payloadLength);
-                                    var args = new DataEventArgs(action, payload);
+                                    var args = new DataEventArgs(action, payload , messageToken);
                                     lastResponse =  new Response(action, payload);
                                     waitHandle.Set();
                                 }
@@ -141,95 +142,11 @@ namespace Felcon.Core
                         Close();
                     }
                 }
+
+                lastResponse = Response.Empty;
+                waitHandle.Set();
                 Disconnected?.Invoke(this , null);
             });
         }
-
-
-        //private struct MessageIdentifier
-        //{
-        //    UInt32 messageLength;
-        //    UInt32 messageType;
-        //}
-
-
-        //protected void StartByteReaderAsync()
-        //{
-        //    // var asyncReadThread = Task.Run(AsyncReader);
-
-        //    int intSize = sizeof(int);
-        //    byte[] bDataLength = new byte[intSize];
-
-        //    pipeStream.ReadAsync(bDataLength, 0, intSize).ContinueWith(t =>
-        //    {
-        //        int len = t.Result;
-
-        //        if (len == 0)
-        //        {
-        //            Disconnected?.Invoke(this, EventArgs.Empty);
-        //        }
-        //        else
-        //        {
-        //            int dataLength = BitConverter.ToInt32(bDataLength, 0);
-        //            byte[] data = new byte[dataLength];
-
-
-        //            pipeStream.ReadAsync(data, 0, dataLength).ContinueWith(t2 =>
-        //            {
-        //                len = t2.Result;
-        //                if (len != dataLength)
-        //                {
-
-        //                }
-        //                else
-        //                if (len == 0)
-        //                {
-
-        //                    Disconnected?.Invoke(this, EventArgs.Empty);
-        //                }
-        //                else
-        //                {
-        //                    var mtype = (MessageTypes)BitConverter.ToInt32(data, 0);
-
-        //                    switch (mtype)
-        //                    {
-        //                        case MessageTypes.M_request:
-        //                            {
-        //                                var actionLen = BitConverter.ToInt32(data, 4);
-        //                                var action = Encoding.ASCII.GetString(data, 8, actionLen);
-        //                                var xml = Encoding.ASCII.GetString(data, 8 + actionLen, data.Length - (8 + actionLen));
-
-        //                                DataEventArgs e = new DataEventArgs(action, xml);
-        //                                DataReceived.Invoke(this, e);
-
-        //                                send(e.response.action, e.response.xml, false);
-
-        //                                break;
-        //                            }
-        //                        case MessageTypes.M_response:
-        //                            {
-        //                                var actionLen = BitConverter.ToInt32(data, 4);
-        //                                var action = Encoding.ASCII.GetString(data, 8, actionLen);
-        //                                var xml = Encoding.ASCII.GetString(data, 8 + actionLen, data.Length - (8 + actionLen));
-
-        //                                lastResponse = new Response(action, xml);
-        //                                waitHandle.Set();
-
-        //                            }
-        //                            break;
-        //                        default:
-        //                            break;
-        //                    }
-
-        //                    StartByteReaderAsync();
-        //                    //StartByteReaderAsync();
-        //                }
-
-        //            });
-
-
-        //        }
-        //    });
-        //}
     }
 }

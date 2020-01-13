@@ -34,16 +34,24 @@ namespace ServerExample
 
             pipe.DataReceived += (s, e) =>
             {
-                
-                consoleTextBox.Invoke(consoleTextBox => consoleTextBox.Text +=
-                $"[{DateTime.Now.ToLongTimeString()}](INCOMING::{currentPipeNum})-> act:{e.action}, payload:{e.payload}\r\n");
+
+                WriteConsole("Receive", " client " + currentPipeNum, e.action, e.payload);
+
+                if (e.method == Felcon.Definitions.Tokens.Request)
+                {
+                    e.response.action = "SA";
+                    e.response.payload = "Client " + currentPipeNum+ " kardes";
+
+                    WriteConsole("Automatic Response", " client " + currentPipeNum, e.response.action, e.response.payload);
+
+                }
+
             };
 
             pipe.Connected += (s, e) =>
             {
- 
-                consoleTextBox.Invoke(consoleTextBox => consoleTextBox.Text +=
-                $"[{DateTime.Now.ToLongTimeString()}](EVENT)-> Connected {{{currentPipeNum}}}\r\n");
+
+                WriteConsole("Connected", " client " + currentPipeNum);
 
                 clientsListView.Invoke((clientsListView) =>
                 {
@@ -63,9 +71,8 @@ namespace ServerExample
 
             pipe.Disconnected += (s, e) =>
             {
-                consoleTextBox.Invoke(consoleTextBox => consoleTextBox.Text +=
-              $"[{DateTime.Now.ToLongTimeString()}](EVENT)-> Disconnected {{{currentPipeNum}}}\r\n");
-
+                WriteConsole("Disconnected", " client "+ currentPipeNum);
+ 
                 clientsListView.Invoke(clientsListView =>
                 {
                     foreach (var item in clientsListView.Items.Cast<ListViewItem>().Where(l => l.Tag == s))
@@ -98,13 +105,12 @@ namespace ServerExample
             {
                 foreach (ListViewItem selectedItem in clientsListView.SelectedItems)
                 {
-                    consoleTextBox.Invoke(consoleTextBox => consoleTextBox.Text +=
-                    $"[{DateTime.Now.ToLongTimeString()}](OUTGOING::{selectedItem.Text})-> act:{actionTextBox.Text}, payload:{payloadTextBox.Text}\r\n");
 
 
+                    WriteConsole("Send", selectedItem.Text, actionTextBox.Text, payloadTextBox.Text);
 
                     var masterPipe = (FServer)selectedItem.Tag;
-                    masterPipe.send(actionTextBox.Text, payloadTextBox.Text);
+                    masterPipe.SendMessage(actionTextBox.Text, payloadTextBox.Text);
                 }
             }
             
@@ -121,6 +127,45 @@ namespace ServerExample
         private void MainWindow_Load(object sender, EventArgs e)
         {
             startButton_Click(startButton, null);
+        }
+
+
+        public void WriteConsole(string eventName, string eventInfo)
+        {
+            consoleTextBox.Invoke(console =>
+            {
+                console.Text += $"[{DateTime.Now.ToLongTimeString()}]({eventName})-> {eventInfo}\r\n";
+                console.SelectionStart = console.Text.Length;
+                console.ScrollToCaret();
+            });
+        }
+        public void WriteConsole(string eventName, string targetName, string action, string payload)
+        {
+            consoleTextBox.Invoke(console =>
+            {
+
+                console.Text += $"[{DateTime.Now.ToLongTimeString()}]({eventName}::{targetName})-> act:{action}, payload:{payload}\r\n";
+                console.SelectionStart = console.Text.Length;
+                console.ScrollToCaret();
+            });
+        }
+
+
+        private void requestButton_Click(object sender, EventArgs e)
+        {
+            if (clientsListView.SelectedItems.Count != 0)
+            {
+                foreach (ListViewItem selectedItem in clientsListView.SelectedItems)
+                {
+       
+                    WriteConsole("Request", selectedItem.Text, actionTextBox.Text, payloadTextBox.Text);
+                    var masterPipe = (FServer)selectedItem.Tag;
+                    masterPipe.SendRequestAsync(actionTextBox.Text, payloadTextBox.Text).ContinueWith(response =>
+                    {
+                        WriteConsole("Response", selectedItem.Text, response.Result.action, response.Result.payload);
+                    });
+                }
+            }
         }
     }
 

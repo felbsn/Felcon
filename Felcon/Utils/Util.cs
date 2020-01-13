@@ -51,5 +51,12 @@ namespace Felcon.Utils
             }
         }
 
+
+
+        public static string GetExecutablePath()
+        {
+            return System.Reflection.Assembly.GetExecutingAssembly().GetName().CodeBase;
+        }
+
     }
 }

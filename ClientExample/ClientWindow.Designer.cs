@@ -39,6 +39,7 @@
             this.label3 = new System.Windows.Forms.Label();
             this.statusLabel = new System.Windows.Forms.Label();
             this.addressLabel = new System.Windows.Forms.Label();
+            this.requestButton = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // connectionTextBox
@@ -63,7 +64,7 @@
             // 
             // connectButtton
             // 
-            this.connectButtton.Location = new System.Drawing.Point(523, 14);
+            this.connectButtton.Location = new System.Drawing.Point(578, 14);
             this.connectButtton.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.connectButtton.Name = "connectButtton";
             this.connectButtton.Size = new System.Drawing.Size(97, 62);
@@ -80,7 +81,7 @@
             this.consoleTextBox.Multiline = true;
             this.consoleTextBox.Name = "consoleTextBox";
             this.consoleTextBox.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.consoleTextBox.Size = new System.Drawing.Size(603, 516);
+            this.consoleTextBox.Size = new System.Drawing.Size(659, 516);
             this.consoleTextBox.TabIndex = 3;
             // 
             // label2
@@ -96,15 +97,15 @@
             // 
             // payloadTextBox
             // 
-            this.payloadTextBox.Location = new System.Drawing.Point(16, 617);
+            this.payloadTextBox.Location = new System.Drawing.Point(96, 615);
             this.payloadTextBox.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.payloadTextBox.Name = "payloadTextBox";
-            this.payloadTextBox.Size = new System.Drawing.Size(416, 27);
+            this.payloadTextBox.Size = new System.Drawing.Size(364, 27);
             this.payloadTextBox.TabIndex = 5;
             // 
             // actionTextBox
             // 
-            this.actionTextBox.Location = new System.Drawing.Point(441, 617);
+            this.actionTextBox.Location = new System.Drawing.Point(16, 615);
             this.actionTextBox.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.actionTextBox.Name = "actionTextBox";
             this.actionTextBox.Size = new System.Drawing.Size(72, 27);
@@ -112,7 +113,7 @@
             // 
             // sendButton
             // 
-            this.sendButton.Location = new System.Drawing.Point(523, 617);
+            this.sendButton.Location = new System.Drawing.Point(468, 613);
             this.sendButton.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.sendButton.Name = "sendButton";
             this.sendButton.Size = new System.Drawing.Size(97, 31);
@@ -156,11 +157,23 @@
             this.addressLabel.Text = "Address";
             this.addressLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
+            // requestButton
+            // 
+            this.requestButton.Location = new System.Drawing.Point(578, 613);
+            this.requestButton.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.requestButton.Name = "requestButton";
+            this.requestButton.Size = new System.Drawing.Size(97, 31);
+            this.requestButton.TabIndex = 21;
+            this.requestButton.Text = "Request";
+            this.requestButton.UseVisualStyleBackColor = true;
+            this.requestButton.Click += new System.EventHandler(this.requestButton_Click);
+            // 
             // ClientWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(636, 660);
+            this.ClientSize = new System.Drawing.Size(688, 660);
+            this.Controls.Add(this.requestButton);
             this.Controls.Add(this.addressLabel);
             this.Controls.Add(this.statusLabel);
             this.Controls.Add(this.label3);
@@ -195,6 +208,7 @@
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Label statusLabel;
         private System.Windows.Forms.Label addressLabel;
+        private System.Windows.Forms.Button requestButton;
     }
 }
 

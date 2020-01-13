@@ -21,10 +21,13 @@ namespace Felcon
     {
         public readonly string action;
         public readonly string payload;
+
+        public readonly Definitions.Tokens method;
         public Response response;
 
-        public DataEventArgs(string action, string payload)
+        public DataEventArgs(string action, string payload , Definitions.Tokens method)
         {
+            this.method = method;
             response = Response.Empty;
             this.action = action;
             this.payload = payload;
