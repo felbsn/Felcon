@@ -51,18 +51,18 @@ namespace Felcon.Core
 
             servers[currentId] = fserver;
 
-            // create new pipes ondemand
+            
             fserver.Connected += (s, e) =>
             {
+                // create new pipes ondemand
                 CreateConnection();
-                ClientConnected?.Invoke(currentId , fserver);
+                ClientConnected?.Invoke(currentId, fserver);
             };
-
             fserver.Disconnected += (s, e) =>
-             {
-                 ClientDisconnected?.Invoke(currentId, fserver);
-                 servers.Remove(currentId);
-             };
+            {
+                ClientDisconnected?.Invoke(currentId, fserver);
+                servers.Remove(currentId);
+            };
 
             fserver.Initialize();
         }

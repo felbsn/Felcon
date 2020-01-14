@@ -6,17 +6,21 @@ using System.Windows.Forms;
 
 namespace ClientExample
 {
-    static class Program
+    public static class Program
     {
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
+            Program.args = args;
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new ClientWindow());
         }
+
+        public static string[] args;
     }
 }

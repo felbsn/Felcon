@@ -32,6 +32,10 @@ namespace Felcon
             this.action = action;
             this.payload = payload;
         }
+        public override string ToString()
+        {
+            return $"args act:{action} payload:{payload} method:{method}";
+        }
     }
 
 

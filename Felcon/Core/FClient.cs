@@ -39,7 +39,6 @@ namespace Felcon.Core
                 Initialize();
                 clientPipeStream.Connect(ms);
                 OnConnect();
-                Listen();
                 return true;
             }
             catch (Exception e)

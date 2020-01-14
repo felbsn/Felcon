@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,6 +20,8 @@ namespace ClientExample
             InitializeComponent();
             slavePipe = new FClient("testAddr");
 
+            slavePipe.Tag = Path.GetRandomFileName();
+
             var pipe = slavePipe;
             pipe.DataReceived += (s, e) =>
             {
@@ -27,10 +30,21 @@ namespace ClientExample
 
                 if (e.method == Felcon.Definitions.Tokens.Request)
                 {
-                    e.response.action = "M";
-                    e.response.payload = "ben de bir clientim";
+                    if(e.action == "identification")
+                    {
+                        e.response.action = "x";
+                        e.response.payload = "CADACADACADACAD";
+                        WriteConsole("SEND ID", "Server", e.action, e.payload);
+                    }
+                    else
+                    {
 
-                    WriteConsole("Automatic Response", "Server", e.response.action, e.response.payload);
+                        e.response.action = "M";
+                        e.response.payload = "ben de bir clientim";
+
+                        WriteConsole("Automatic Response", "Server", e.response.action, e.response.payload);
+                    }
+
                  
                 }
             };
@@ -38,6 +52,8 @@ namespace ClientExample
             pipe.Connected += (s, e) =>
             {
                 WriteConsole("Connected", "evet");
+
+
 
             };
 

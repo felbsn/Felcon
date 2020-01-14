@@ -60,6 +60,7 @@
             this.clientsListView.TabIndex = 28;
             this.clientsListView.UseCompatibleStateImageBehavior = false;
             this.clientsListView.View = System.Windows.Forms.View.List;
+            this.clientsListView.SelectedIndexChanged += new System.EventHandler(this.clientsListView_SelectedIndexChanged);
             // 
             // sendButton
             // 

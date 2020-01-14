@@ -17,7 +17,7 @@ namespace Felcon.Extensions
             catch (Exception ex)
             {
                 Console.WriteLine("Exception in safe invoke! " + ex.Message);
-                throw ex;
+                //throw ex;
             }
         
         }
@@ -30,7 +30,8 @@ namespace Felcon.Extensions
             catch (Exception ex)
             {
                 Console.WriteLine("Exception in safe invoke! " + ex.Message);
-                throw ex;
+                //System.Windows.Forms.MessageBox.Show("Test");
+                // throw ex;
             }
 
         }

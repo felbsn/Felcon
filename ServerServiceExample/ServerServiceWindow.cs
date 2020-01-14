@@ -22,6 +22,7 @@ namespace ServerServiceExample
 
             fServerService.ClientConnected += (id, client) =>
             {
+                // add new client to list view
                 clientsListView.Invoke(list =>
                 {
                     var item = new ListViewItem();
@@ -32,14 +33,17 @@ namespace ServerServiceExample
 
                 WriteConsole("Client Connect", "id:" + id);
 
+                client.Tag = client.RequestTag();
+
+                WriteConsole("Requested Tag", "ClientID:" + id, "tag = "+ client.Tag, "");
+
 
                 client.DataReceived += (s, d) =>
                 {
                     WriteConsole("Data Received" , "ClientID:"+ id , d.action , d.payload);
 
 
-
-                    if(d.method ==Felcon.Definitions.Tokens.Request)
+                    if (d.method ==Felcon.Definitions.Tokens.Request)
                     {
                         d.response.action = "server action!";
                         d.response.payload = "server payload!";
@@ -77,21 +81,6 @@ namespace ServerServiceExample
             btn.Text = "Listening";
             btn.Enabled = false;
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
         public void WriteConsole(string eventName, string eventInfo)
         {
@@ -140,9 +129,8 @@ namespace ServerServiceExample
             {
                 foreach (ListViewItem selectedItem in clientsListView.SelectedItems)
                 {
-
-
                     WriteConsole("Send", selectedItem.Text, actionTextBox.Text, payloadTextBox.Text);
+                
 
                     int id = (int)selectedItem.Tag;
                     var instance = fServerService.GetInstance(id);
@@ -150,10 +138,35 @@ namespace ServerServiceExample
                 }
             }
         }
+        //enum Cads
+        //{ }
+        //void openCAD( string path, Cads cadEnum)
+        //{
+        //    fServerService.GetInstance(id);
+        //}
 
         private void ServerServiceWindow_Load(object sender, EventArgs e)
         {
             startButton_Click(startButton, null);
+        }
+
+        private void clientsListView_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (clientsListView.SelectedItems.Count != 0)
+            {
+                foreach (ListViewItem selectedItem in clientsListView.SelectedItems)
+                {
+                    //WriteConsole("Send", selectedItem.Text, actionTextBox.Text, payloadTextBox.Text);
+
+                    int id = (int)selectedItem.Tag;
+                    var instance = fServerService.GetInstance(id);
+            
+                    MessageBox.Show("Selected Tag" + instance.Tag);
+      
+                    //WriteConsole("INSTANCE ID", selectedItem.Text, instance.Tag, payloadTextBox.Text);
+                    //instance?.SendMessage(actionTextBox.Text, payloadTextBox.Text);
+                }
+            }
         }
     }
 

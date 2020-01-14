@@ -11,7 +11,6 @@ namespace Felcon.Core
     {
         protected NamedPipeServerStream serverPipeStream;
 
-
         public FServer(string name) : base(name)
         {
         }
@@ -29,7 +28,6 @@ namespace Felcon.Core
             serverPipeStream.WaitForConnectionAsync().ContinueWith((res) =>
             {
                 OnConnect();
-                Listen();
             });
         }
 
