@@ -53,6 +53,8 @@ namespace ClientExample
             {
                 WriteConsole("Connected", "evet");
 
+                var reqs = pipe.SendRequest("COnnectionReq", "bir seyler");
+
 
 
             };

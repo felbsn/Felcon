@@ -14,7 +14,7 @@ namespace Felcon.Core
             var buffer = new byte[4];
             int len = pipeStream.Read(buffer, 0, 4);
             if (len != 4)
-                throw new Exception("Int32 read exception");
+                throw new Exception("Int32 read exception ");
             return BitConverter.ToInt32(buffer, 0);
         }
         public static string ReadString(this PipeStream pipeStream, int count)

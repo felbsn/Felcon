@@ -105,7 +105,7 @@ namespace Felcon.Core
 
             send("reqTag", "somethng", Tokens.RequestTag);
 
-             var res = handle.WaitOne(20_100);
+             var res = handle.WaitOne(100);
              if (!res) Console.WriteLine("Request tag failed!");
              
              foreach (Delegate d in TagReceived.GetInvocationList())
@@ -230,6 +230,7 @@ namespace Felcon.Core
                         }
                         catch (Exception ex)
                         {
+                            IsListening = false;
                             Console.WriteLine("Exception in listener!:" + ex.Message);
 
                             Close();
