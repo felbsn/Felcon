@@ -55,9 +55,9 @@ namespace ClientExample
             {
                 WriteConsole("Connected", "evet");
 
-                //var reqs = pipe.SendRequest("COnnectionReq", "bir seyler");
+                var reqs = pipe.SendRequest("COnnectionReq", "bir seyler");
 
-
+                WriteConsole("BLOCKING REQ", "jaa" , reqs.action, reqs.payload);
 
             };
 

@@ -239,14 +239,7 @@ namespace Felcon.Core
                 Task.Delay(10).Wait();
                 Connected?.Invoke(this, EventArgs.Empty);
             });
-            
-            //ListenOnce(args =>
-            //{
-            //    Console.WriteLine("some message " + args);
-            //}).ContinueWith(t =>
-            //{
-            //    
-            //});
+ 
         }
             
 
@@ -262,6 +255,10 @@ namespace Felcon.Core
                     {
                         try
                         {
+                            pipeStream.Read(new byte[0], 0, 0);
+                            lock(pipeStream)
+                            { 
+
                             var messageLength = pipeStream.ReadI32();
                             var messageMethod = pipeStream.ReadI32();
 
@@ -337,6 +334,7 @@ namespace Felcon.Core
                             
                        
                             Console.WriteLine($"{IsServer}[LISTEN END] Name:{Name} msg:{messageToken}");
+                            }
                         }
                         catch (Exception ex)
                         {

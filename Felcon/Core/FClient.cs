@@ -101,18 +101,19 @@ namespace Felcon.Core
                 {
                     if (CheckServerApplication())
                     {
-                        var t = Connect(2000, 100);
-                    t.Wait() ;
-                    return t.Result ;
+                    //    var t = Connect(2000, 100);
+                    //t.Wait() ;
+                    //return t.Result ;
+                    return Connect(2000);
                     }
                     else
                     {
                         StartServerApplication();
 
-                        var t = Connect(2000, 100);
-                        t.Wait();
-                        return t.Result;
-                    //return Connect(2000);
+                       //var t = Connect(2000, 100);
+                       //t.Wait();
+                       //return t.Result;
+                    return Connect(2000);
                 }
                 }
                 else

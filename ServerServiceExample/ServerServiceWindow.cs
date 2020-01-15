@@ -20,6 +20,7 @@ namespace ServerServiceExample
             InitializeComponent();
             fServerService = new FServerService(serverAddressTextBox.Text);
 
+
             fServerService.ClientConnected += (id, client) =>
             {
                 // add new client to list view
