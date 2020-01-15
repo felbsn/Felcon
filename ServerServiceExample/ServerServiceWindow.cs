@@ -26,18 +26,13 @@ namespace ServerServiceExample
                 clientsListView.Invoke(list =>
                 {
                     var item = new ListViewItem();
-                    item.Text = "Client:" + id;
+                    item.Text = "Client:" + id +"T:"+ client.Tag;
                     item.Tag = id;
                     list.Items.Add(item);
                 });
-
-                WriteConsole("Client Connect", "id:" + id);
-
-                client.Tag = client.RequestTag();
-
-                WriteConsole("Requested Tag", "ClientID:" + id, "tag = "+ client.Tag, "");
-
-
+ 
+                WriteConsole("Client Connect", "id:" + id + " tag:"+ client.Tag);
+ 
                 client.DataReceived += (s, d) =>
                 {
                     WriteConsole("Data Received" , "ClientID:"+ id , d.action , d.payload);
@@ -161,7 +156,7 @@ namespace ServerServiceExample
                     int id = (int)selectedItem.Tag;
                     var instance = fServerService.GetInstance(id);
             
-                    MessageBox.Show("Selected Tag" + instance.Tag);
+                   // MessageBox.Show("Selected Tag" + instance.Tag);
       
                     //WriteConsole("INSTANCE ID", selectedItem.Text, instance.Tag, payloadTextBox.Text);
                     //instance?.SendMessage(actionTextBox.Text, payloadTextBox.Text);

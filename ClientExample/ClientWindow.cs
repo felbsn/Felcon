@@ -21,6 +21,8 @@ namespace ClientExample
             slavePipe = new FClient("testAddr");
 
             slavePipe.Tag = Path.GetRandomFileName();
+            slavePipe.Name = "CLIENT " + Path.GetRandomFileName();
+            slavePipe.IsServer = " CLIENT::";
 
             var pipe = slavePipe;
             pipe.DataReceived += (s, e) =>
@@ -53,7 +55,7 @@ namespace ClientExample
             {
                 WriteConsole("Connected", "evet");
 
-                var reqs = pipe.SendRequest("COnnectionReq", "bir seyler");
+                //var reqs = pipe.SendRequest("COnnectionReq", "bir seyler");
 
 
 

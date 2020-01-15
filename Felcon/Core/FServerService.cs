@@ -47,6 +47,7 @@ namespace Felcon.Core
         private void CreateConnection()
         {
             var fserver = new FServer(ServerAddress);
+            fserver.Name = "server"+ m_serverCounter;
             var currentId = GetID();
 
             servers[currentId] = fserver;
@@ -56,6 +57,9 @@ namespace Felcon.Core
             {
                 // create new pipes ondemand
                 CreateConnection();
+
+                // require tag
+                fserver.RequestTag();
                 ClientConnected?.Invoke(currentId, fserver);
             };
             fserver.Disconnected += (s, e) =>

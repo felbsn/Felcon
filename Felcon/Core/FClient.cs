@@ -25,7 +25,7 @@ namespace Felcon.Core
         public FClient(string address) : base(address)
         {
 
-
+            IsMaster = false;
         }
         public void Initialize()
         {
@@ -48,7 +48,27 @@ namespace Felcon.Core
             }
         }
 
+        public Task<bool> Connect(int ms   , int delay)
+        {
+            return Task.Run(() =>
+            {
+                try
+                {
+                    Initialize();
+                    clientPipeStream.Connect(ms);
+                    OnConnect();
 
+                    Task.Delay(delay).Wait();
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message + " Unable to connect server");
+                    return false;
+                }
+            });
+
+        }
 
         // methods...
         public override void SendMessage(string action, string payload)
@@ -75,24 +95,29 @@ namespace Felcon.Core
         // Connection checks
         public bool EnsureConnection()
         {
-            if (!IsConnected)
-            {
-                if(Connect(100))
+            //return Task.Run(() =>
+            //{
+                if (!IsConnected)
                 {
-                    return true;
-                }else
-                if (CheckServerApplication())
-                {
-                    return Connect(2000);
+                    if (CheckServerApplication())
+                    {
+                        var t = Connect(2000, 100);
+                    t.Wait() ;
+                    return t.Result ;
+                    }
+                    else
+                    {
+                        StartServerApplication();
+
+                        var t = Connect(2000, 100);
+                        t.Wait();
+                        return t.Result;
+                    //return Connect(2000);
+                }
                 }
                 else
-                {
-                    StartServerApplication();
-                    return Connect(2000);
-                }
-            }
-            else
-                return true;
+                    return true;
+            //});
         }
         public bool CheckServerApplication()
         {
