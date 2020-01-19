@@ -19,6 +19,8 @@ namespace Felcon.Core
 
         protected NamedPipeClientStream clientPipeStream;
 
+        public bool IsStarted { get; protected set; }
+
         public FClient(string address, string ServerProcessName, string ServerRegeditPath, string ServerRegeditPathKey) : base(address)
         {
             this.ServerProcessName = ServerProcessName;
@@ -89,24 +91,30 @@ namespace Felcon.Core
             if(!IsConnected)
             Task.Run(async () =>
             {
-
-                while(! IsConnected)
+                if (IsStarted) return;
+                IsStarted = true;
+                while (! IsConnected)
                 {
                     await Task.Delay(100);
                     var b = Connect(-1);
                     Console.WriteLine($"Connect respond fr { b}");
 
                 }
+                IsStarted = false;
             });
 
             Disconnected +=  (s , e) =>
             {
+                if (IsStarted) return;
+                IsStarted = true;
+
                 while (!IsConnected)
                 {
                    
                     var b = Connect(-1);
                     Console.WriteLine($"Connect respond dc { b}");
                 }
+                IsStarted = false;
             };
         }
 
@@ -117,11 +125,21 @@ namespace Felcon.Core
             {
                 if (CheckServerApplication())
                 {
+                    if(IsStarted)
+                    {
+                        return IsConnected;
+                    }
+
                     return Connect(2000);
                 }
                 else
                 if(StartServerApplication())
                 {
+                    if (IsStarted)
+                    {
+                        return IsConnected;
+                    }
+
                     return Connect(2000); 
                 }else
                 {

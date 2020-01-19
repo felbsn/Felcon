@@ -27,6 +27,8 @@ namespace Felcon.Core
         // public fields
         public string PipeAddress;
         public bool IsConnected { get => pipeStream == null ? false : pipeStream.IsConnected; }
+     
+
         public bool IsListening { get; protected set; }
 
         public string Tag { get;  set; }
