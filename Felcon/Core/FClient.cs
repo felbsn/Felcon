@@ -7,27 +7,23 @@ using System.IO.Pipes;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
-using u = UniLog.UniLog;
-
+ 
 namespace Felcon.Core
 {
 
     public class FClient : PipeBase
     {
-
-        public string ServerProcessName = "ArasPlmConnector";
-        public string ServerRegeditPath = @"Software\ArasPlmConnector";
+        public string ServerProcessName    = "ArasPlmConnector";
+        public string ServerRegeditPath    = @"Software\ArasPlmConnector";
         public string ServerRegeditPathKey = "executable_path";
-
 
         protected NamedPipeClientStream clientPipeStream;
 
-
-        public FClient(string address) : base(address)
+        public FClient(string address, string ServerProcessName, string ServerRegeditPath, string ServerRegeditPathKey) : base(address)
         {
-
-            IsMaster = false;
+            this.ServerProcessName = ServerProcessName;
+            this.ServerRegeditPath = ServerRegeditPath;
+            this.ServerRegeditPathKey = ServerRegeditPathKey;
         }
         public void Initialize()
         {
@@ -35,14 +31,11 @@ namespace Felcon.Core
             System.Security.Principal.SecurityIdentifier sid = new System.Security.Principal.SecurityIdentifier(System.Security.Principal.WellKnownSidType.WorldSid, null);
             PipeAccessRule par = new PipeAccessRule(sid, PipeAccessRights.ReadWrite, System.Security.AccessControl.AccessControlType.Allow);
             ps.AddAccessRule(par);
-
-            clientPipeStream = new NamedPipeClientStream(".", FullPipeName, PipeDirection.InOut, PipeOptions.Asynchronous, System.Security.Principal.TokenImpersonationLevel.Anonymous);
+            clientPipeStream = new NamedPipeClientStream(".", PipeAddress, PipeDirection.InOut, PipeOptions.Asynchronous, System.Security.Principal.TokenImpersonationLevel.Anonymous);
             pipeStream = clientPipeStream;
 
          
         }
-
-
         public bool Connect(int ms = 100)
         {
             try
@@ -54,82 +47,90 @@ namespace Felcon.Core
             }
             catch (Exception e)
             {
-                u.log(e.Message + " Unable to connect server");
-                u.log("CAN NOT CONNECT ! " + e.Message + " " + e.StackTrace);
+                Console.WriteLine(e.Message + " Unable to connect server");
+                Console.WriteLine("CAN NOT CONNECT ! " + e.Message + " " + e.StackTrace);
                 return false;
             }
         }
 
-        public Task<bool> Connect(int ms, int delay)
-        {
-            return Task.Run(() =>
-            {
-                try
-                {
-                    Initialize();
-                    clientPipeStream.Connect(ms);
-                    OnConnect();
-
-                    Task.Delay(delay).Wait();
-                    return true;
-                }
-                catch (Exception e)
-                {
-                    u.log(e.Message + " Unable to connect server");
-                    return false;
-                }
-            });
-
-        }
-
-        // methods...
-        public override void SendMessage(string action, string payload)
+        public void SendMessage(string action, string payload)
         {
             if (EnsureConnection())
             {
-                base.SendMessage(action, payload);
+                base.message(action, payload);
             }
         }
-        public override Response SendRequest(string action, string payload)
+        public Response SendRequest(string action, string payload)
         {
             if (EnsureConnection())
             {
-                return base.SendRequest(action, payload);
+                return base.request(action, payload);
             }
             else
             {
                 return Response.Empty;
             }
         }
+        public Task<Response> SendRequestAsync(string action, string payload)
+        {
+            if (EnsureConnection())
+            {
+                return base.requestAsync(action, payload);
+            }
+            else
+            {
+                return Task.Run(() => Response.Empty);
+            }
+        }
 
+        // start contiounus service
+        public void Start()
+        {
+            if(!IsConnected)
+            Task.Run(async () =>
+            {
 
+                while(! IsConnected)
+                {
+                    await Task.Delay(100);
+                    var b = Connect(-1);
+                    Console.WriteLine($"Connect respond fr { b}");
+
+                }
+            });
+
+            Disconnected +=  (s , e) =>
+            {
+                while (!IsConnected)
+                {
+                   
+                    var b = Connect(-1);
+                    Console.WriteLine($"Connect respond dc { b}");
+                }
+            };
+        }
 
         // Connection checks
         public bool EnsureConnection()
         {
-            //return Task.Run(() =>
-            //{
             if (!IsConnected)
             {
                 if (CheckServerApplication())
                 {
-                    var t = Connect(2000, 100);
-                    t.Wait();
-                    return t.Result;
+                    return Connect(2000);
                 }
                 else
+                if(StartServerApplication())
                 {
-                    StartServerApplication();
-
-                    var t = Connect(2000, 100);
-                    t.Wait();
-                    return t.Result;
-                    //return Connect(2000);
+                    return Connect(2000); 
+                }else
+                {
+                    // cant start application
+                    return false;
                 }
             }
             else
                 return true;
-            //});
         }
         public bool CheckServerApplication()
         {

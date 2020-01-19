@@ -10,7 +10,7 @@ namespace Felcon.Utils
     public static class Util
     {
         // merging arrays has never been easier  ( -_-)
-        public static byte[] Merge(params byte[][] arrays)
+        public static byte[] MergeBytes(params byte[][] arrays)
         {
             if(arrays.Length == 0)
             {
@@ -33,25 +33,35 @@ namespace Felcon.Utils
             return arr;
         }
 
+ 
+
 
         /// <summary>
         ///  Register Registry (ofcourse minimal pain)
         /// </summary>
         /// <param name="regPath"></param> something like @"Software/{SomeProgram}
         /// <param name="regKey"></param>  ... just a key, 'executable_path' is the best imo
-        /// <param name="executablePath"></param> this is the real executable file location
-        public static void RegisterRegistry( string regPath ,string regKey,string executablePath)
+        /// <param name="value"></param> this will be value of the registry key
+        public static void RegisterRegistry( string regPath ,string regKey,string value)
         {
             RegistryKey key = Registry.CurrentUser.OpenSubKey(regPath, true);
             if (key == null)
                 key = Registry.CurrentUser.CreateSubKey(regPath, true);
-            if (key.GetValue(regKey, "null").ToString() != executablePath)
+            if (key.GetValue(regKey, "").ToString() != value)
             {
-                key.SetValue(regKey, executablePath);
+                key.SetValue(regKey, value);
             }
         }
 
-
+        public static string GetRegistryValue(string regPath, string regKey)
+        {
+            RegistryKey key = Registry.CurrentUser.OpenSubKey(regPath, true);
+            if (key != null)
+            {
+                return (string)key.GetValue(regKey, null);
+            }
+            return null;
+        }
 
         public static string GetExecutablePath()
         {

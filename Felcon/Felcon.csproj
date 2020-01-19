@@ -42,7 +42,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Core\ConnectionBase.cs" />
     <Compile Include="Core\DataTypes.cs" />
     <Compile Include="Core\FServerService.cs" />
     <Compile Include="Definitions\Tokens.cs" />

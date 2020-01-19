@@ -18,11 +18,11 @@ namespace ClientExample
         public ClientWindow()
         {
             InitializeComponent();
-            slavePipe = new FClient("testAddr");
+ 
+            slavePipe = new FClient("testAddr" , "ServerServiceExample" , @"Software\testv0", "path");
 
             slavePipe.Tag = Path.GetRandomFileName();
-            slavePipe.Name = "CLIENT " + Path.GetRandomFileName();
-            slavePipe.IsServer = " CLIENT::";
+ 
 
             var pipe = slavePipe;
             pipe.DataReceived += (s, e) =>
@@ -53,36 +53,51 @@ namespace ClientExample
 
             pipe.Connected += (s, e) =>
             {
-                UniLog.UniLog.success("Connected", "evet");
+
+                WriteConsole("CONNECT", "connected");
+
+                Task.Run(async () =>
+                {
+                    var thisClient = pipe;
+                    int count = 1;
+                    while (thisClient.IsConnected)
+                    {
+                        thisClient.requestAsync("BU CLAYNT", "XXX " + count++);
+                        await Task.Delay(10);
+
+                        if (count == 40) break;
+                    }
+
+                });
 
 
-               //Task.Run(() =>
-               //{
-               //    var rnd = new Random((int)DateTime.Now.Ticks);
-               //    Task.Delay(200).Wait();
-               //    int i = 0;
-               //    //while (pipe.IsConnected)
-               //    //{
-               //    //    var delay = rnd.Next(10, 700);
-               //    //    Task.Delay(delay).Wait();
-               //    //
-               //    //    var Result = pipe.SendRequest("MELABE SERVER " + i, "eved " + i);
-               //    //
-               //    //    WriteConsole("BLOCKING REQ", "jaa", Result.action, Result.payload);
-               //    //
-               //    //
-               //    //    i++;
-               //    //    // var reqs = pipe.SendRequest("COnnectionReq "+ 10, "bir seyler" + 10);
-               //    //    // WriteConsole("BLOCKING REQ", "jaa", reqs.action, reqs.payload);
-               //    //}
-               //
-               //});
+                //Task.Run(() =>
+                //{
+                //    var rnd = new Random((int)DateTime.Now.Ticks);
+                //    Task.Delay(200).Wait();
+                //    int i = 0;
+                //    //while (pipe.IsConnected)
+                //    //{
+                //    //    var delay = rnd.Next(10, 700);
+                //    //    Task.Delay(delay).Wait();
+                //    //
+                //    //    var Result = pipe.SendRequest("MELABE SERVER " + i, "eved " + i);
+                //    //
+                //    //    WriteConsole("BLOCKING REQ", "jaa", Result.action, Result.payload);
+                //    //
+                //    //
+                //    //    i++;
+                //    //    // var reqs = pipe.SendRequest("COnnectionReq "+ 10, "bir seyler" + 10);
+                //    //    // WriteConsole("BLOCKING REQ", "jaa", reqs.action, reqs.payload);
+                //    //}
+                //
+                //});
 
             };
 
             pipe.Disconnected += (s, e) =>
             {
-                WriteConsole("Disconnect", "oyle");
+                WriteConsole("DISCONNECT", "disconnected");
             };
 
 
@@ -92,31 +107,28 @@ namespace ClientExample
         private void connectButtton_Click(object sender, EventArgs e)
         {
             var btn = ((Button)sender);
-            btn.Invoke((b) =>
-            {
-                if (slavePipe.IsConnected)
-                {
-                    slavePipe.Close();
+            //btn.Invoke((b) =>
+            //{
+            //    if (slavePipe.IsConnected)
+            //    {
+            //        slavePipe.Close();
 
-                    btn.Text = "Connect";
-                    btn.ForeColor = Color.Black;
-                }
-                else
-                {
-                    var txt = connectionTextBox.Text;
-                    slavePipe.PipeAddress = txt;
-
-                    slavePipe.ServerProcessName = "ServerServiceExample";
-                    slavePipe.ServerRegeditPath = @"Software\testv0";
-                    slavePipe.ServerRegeditPathKey = "path";
-
-                    slavePipe.Connect(100);
+            //        btn.Text = "Connect";
+            //        btn.ForeColor = Color.Black;
+            //    }
+            //    else
+            //    {
+            //        var txt = connectionTextBox.Text;
+            //        slavePipe.PipeAddress = txt;
  
-                    btn.Text = "Disconnect";
-                    btn.ForeColor = Color.Red;
-                }
 
-            });
+            //        slavePipe.Connect(100);
+ 
+            //        btn.Text = "Disconnect";
+            //        btn.ForeColor = Color.Red;
+            //    }
+
+            //});
  
         }
 
@@ -158,17 +170,20 @@ namespace ClientExample
 
         private void ClientWindow_Load(object sender, EventArgs e)
         {
-            UniLog.UniLog.log("start for client");
-            Task.Delay(500).ContinueWith(
-                
-                t => 
+ 
 
-                connectButtton.Invoke((c)=>connectButtton.PerformClick())
-                
-                
-                
-                );
-           
+            slavePipe.Start();
+
+           // Task.Delay(100).ContinueWith(
+           //     
+           //     t => 
+           //
+           //     connectButtton.Invoke((c)=>connectButtton.PerformClick())
+           //     
+           //     
+           //     
+           //     );
+           //
         }
     }
 

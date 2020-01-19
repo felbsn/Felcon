@@ -18,7 +18,7 @@ namespace Felcon.Core
         public void Initialize()
         {
             serverPipeStream = new NamedPipeServerStream(
-            FullPipeName,
+            PipeAddress,
             PipeDirection.InOut,
             NamedPipeServerStream.MaxAllowedServerInstances,
             PipeTransmissionMode.Message,
@@ -31,7 +31,19 @@ namespace Felcon.Core
             });
         }
 
- 
+
+        public void SendMessage(string action, string payload)
+        {
+                base.message(action, payload);
+        }
+        public Response SendRequest(string action, string payload)
+        {
+                return base.request(action, payload);
+        }
+        public Task<Response> SendRequestAsync(string action, string payload)
+        {
+                return base.requestAsync(action, payload);
+        }
 
     }
 }

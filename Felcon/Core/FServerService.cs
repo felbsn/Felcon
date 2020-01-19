@@ -50,7 +50,7 @@ namespace Felcon.Core
         private void CreateConnection()
         {
             var fserver = new FServer(ServerAddress);
-            fserver.Name = "server" + m_serverCounter;
+            fserver.Tag = "server" + m_serverCounter;
             var currentId = GetID();
 
 
@@ -60,12 +60,16 @@ namespace Felcon.Core
 
                 CreateConnection();
 
-                // require tag
-               // fserver.RequestTag();
-                servers[currentId] = (FServer)s;
+                ((FServer)s).requestTagAsync().ContinueWith(t=>
+                {
+                    servers[currentId] = (FServer)s;
 
 
-                ClientConnected?.Invoke(currentId, (FServer)s);
+                    ClientConnected?.Invoke(currentId, (FServer)s);
+
+                });
+
+
             };
             fserver.Disconnected += (s, e) =>
             {

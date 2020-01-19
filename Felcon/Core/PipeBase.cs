@@ -10,159 +10,130 @@ using System.Threading.Tasks;
 using Felcon.Extensions;
 using Felcon.Utils;
 using Felcon.Definitions;
-
-using u = UniLog.UniLog;
-//Felcon.Core
-
+ 
 
 namespace Felcon.Core
 {
     public abstract class PipeBase
     {
-
-
         // events
         public event EventHandler<EventArgs> Disconnected;
         public event EventHandler<DataEventArgs> DataReceived;
         public event EventHandler<EventArgs> Connected;
 
+        // private events
+        private event EventHandler<ResponseEventArgs> ResponseReceived;
+
         // public fields
         public string PipeAddress;
         public bool IsConnected { get => pipeStream == null ? false : pipeStream.IsConnected; }
-        public string FullPipeName { get => PipeAddress; }
         public bool IsListening { get; protected set; }
 
-        public bool IsMaster = true;
+        public string Tag { get;  set; }
 
-        private string tag;
-        public string Tag
-        {
-            get => tag;
-            set => tag = value;
-
-            //set
-            //{
-            //    if (IsConnected) 
-            //        send("setTag", value, Tokens.SetTag);
-            //    tag = value;
-            //}
-        }
-
-        public string Name;
-        public string IsServer = " SERVER::";
-        // private-protected fields
-        private Response lastResponse;
-        private readonly EventWaitHandle waitHandle = new EventWaitHandle(true, EventResetMode.ManualReset);
         protected PipeStream pipeStream;
+ 
+        int requestCounter = 1;
 
 
-        // low level send event
-        protected void send(string action, string payload, Definitions.Tokens token)
+        // low level send event (actually lowest...)
+        protected void send(byte[] value, Tokens token, int messageID)
         {
+            // set header
+            int msgLen = value.Length;
+            int msgMethod = (int)token;
+            int msgID = messageID;
+            int msgVer = 0;
 
-             
-            u.log($"{IsServer}[SEND] Name:{Name} TOKEN:{token}");
-
-            var bActionPair = action.ToLengthValuePair();
-            var bPayloadPair = payload.ToLengthValuePair();
-
-            var bMsgLen = BitConverter.GetBytes((Int32)(bActionPair.Length + bPayloadPair.Length));
-            var bToken = BitConverter.GetBytes((Int32)token);
-            var bMessage = Util.Merge(bMsgLen, bToken, bActionPair, bPayloadPair);
-
+            // create message byte stream
+            var bMsg = Util.MergeBytes(
+                BitConverter.GetBytes(msgLen),
+                BitConverter.GetBytes(msgMethod),
+                BitConverter.GetBytes(msgID),
+                BitConverter.GetBytes(msgVer),
+                value);
+ 
             try
             {
-                pipeStream.Write(bMessage, 0, bMessage.Length);
-
+                pipeStream.Write(bMsg, 0, bMsg.Length);
             }
             catch (Exception ex)
             {
-                _ = ex;
+                Console.WriteLine($"Exception in send message token: {token} {ex.Message}  , {ex.StackTrace}");
+                Close();
+                _ = ex; 
             }
         }
-
-        protected void request(string action, string payload, Definitions.Tokens token)
+        protected void response(byte[] value, int messageID)
         {
-            u.log($"{IsServer}[REQUEST START] Name:{Name} {token}");
-            if (!waitHandle.WaitOne())
-            {
-                u.error($"{IsServer} ANOTHER WAIT { token}");
-                waitHandle.Set();
-                return;
-            }
-            u.log($"{IsServer}[REQUEST RESET HANDLE] Name:{Name}");
-            waitHandle.Reset();
-
-
-            var bActionPair = action.ToLengthValuePair();
-            var bPayloadPair = payload.ToLengthValuePair();
-
-            var bMsgLen = BitConverter.GetBytes((Int32)(bActionPair.Length + bPayloadPair.Length));
-            var bToken = BitConverter.GetBytes((Int32)token);
-
-            var bMessage = Util.Merge(bMsgLen, bToken, bActionPair, bPayloadPair);
-
-
-            u.log($"{IsServer}[REQUEST WRITE] Name:{Name} TOKEN:{token}");
-            try
-            {
-                pipeStream.Write(bMessage, 0, bMessage.Length);
-
-            }
-            catch (Exception ex)
-            {
-                _ = ex;
-                u.error($"{IsServer}[REQUEST WRITE EXCEPTION] Name:{Name} TOKEN:{token}");
-            }
-
-            if (waitHandle.WaitOne())
-            {
-                u.log($"{IsServer}[REQUEST DONE] Name:{Name} \r\n\r\n");
-
-            }
-            else
-            {
-                u.error($"[REQUEST WAIT FAIL] Name:{Name}");
-            }
+            send(value, Tokens.Response, messageID);
         }
 
-        // high level virtual functions , which expects return value
-        public virtual void SendMessage(string action, string payload)
+        public void requestTag()
         {
-            send(action, payload, Tokens.Message);
-        }
-        public virtual Response SendRequest(string action, string payload)
-        {
-            //if (waitHandle.WaitOne(200))
-            //{ 
-            //    u.log($"[FAILED ANOTHER CALL] Name:{Name}");
-            //    Close();
-            //    return default;
-            //}
+                int reqCount = Interlocked.Increment(ref requestCounter);
+                var waitHandle = new EventWaitHandle(false, EventResetMode.ManualReset);
+                EventHandler<ResponseEventArgs> eventHandler = null;
+                Response response = Response.Empty;
+                eventHandler = (s, e) =>
+                {
+                    if (e.messageID == reqCount)
+                    {
+                        response = e.response;
+                        ResponseReceived -= eventHandler;
+                        waitHandle.Set();
+                    }
+                };
+                ResponseReceived += eventHandler;
 
-            request(action, payload, Tokens.Request);
-            var response = lastResponse;
+                var bMsg = "tag".ToLengthValuePair().Concat("get".ToLengthValuePair()).ToArray();
+                send(bMsg, Tokens.RequestTag, reqCount);
+                waitHandle.WaitOne();
+                Tag = response.payload;
+        }
+        public Task requestTagAsync()
+        {
+            return Task.Run(() => requestTag());
+        }
+
+
+        // high level functions
+        public Response request(string action, string payload)
+        {
+            int reqCount = Interlocked.Increment(ref requestCounter);
+            var waitHandle = new EventWaitHandle(false, EventResetMode.ManualReset);
+            EventHandler<ResponseEventArgs> eventHandler = null;
+            Response response = Response.Empty;
+
+
+            eventHandler = (s, e) =>
+            {
+                if(e.messageID == reqCount)
+                {
+
+                    response = e.response;
+                    ResponseReceived -= eventHandler;
+                    waitHandle.Set();
+                }
+            };
+            ResponseReceived += eventHandler;
+ 
+            var bMsg = action.ToLengthValuePair().Concat(payload.ToLengthValuePair()).ToArray();
+            send(bMsg, Tokens.Request, reqCount);
+
+            waitHandle.WaitOne();
+
             return response;
-
-            //waitHandle.Reset();
-            //send(action, payload, Tokens.Request);
-            //
-            //waitHandle.WaitOne();
-            //var response = lastResponse;
-            //return response;
         }
-        public virtual Task<Response> SendRequestAsync(string action, string payload) => Task.Run(() => SendRequest(action, payload));
-
-        // tag things
-
-        public virtual string RequestTag()
+        public Task<Response> requestAsync(string action, string payload) => Task.Run(() => request(action, payload));
+        public void message(string action, string payload)
         {
+            var bMsg = Util.MergeBytes(
+                action.ToLengthValuePair(), 
+                payload.ToLengthValuePair());
 
-            request($"{IsServer}{Name}", "reqTag", Tokens.RequestTag);
-            return tag;
+            send(bMsg, Tokens.Message , 0);
         }
-
-
 
 
 
@@ -171,10 +142,9 @@ namespace Felcon.Core
         {
             if (pipeStream != null)
             {
-                waitHandle.Set();
                 if (pipeStream.IsConnected)
                 {
-                    u.log($"{IsServer}[CLOSING] Name:{Name}");
+                    Console.WriteLine($"[CLOSING]");
                     pipeStream.WaitForPipeDrain();
                 }
 
@@ -199,181 +169,98 @@ namespace Felcon.Core
         {
             if (IsListening == false)
             {
-                u.success($"{IsServer}[LISTEN START] Name:{Name}");
                 IsListening = true;
                 return Task.Run(() =>
                 {
-                    while (pipeStream != null && pipeStream.IsConnected)
-                    {
-                        try
-                        {
-                            var messageLength = pipeStream.ReadI32();
-                            var messageMethod = pipeStream.ReadI32();
-
-                            var messageToken = (Tokens)messageMethod;
-
-                            u.log($"{IsServer}[LISTEN BEGIN] Name:{Name} msg:{messageToken}");
-                            switch (messageToken)
-                            {
-                                case Tokens.Message:
-                                    {
-                                        var actionLength = pipeStream.ReadI32();
-                                        var action = pipeStream.ReadString(actionLength);
-                                        var payloadLength = pipeStream.ReadI32();
-                                        var payload = pipeStream.ReadString(payloadLength);
-                                        DataReceived?.SafeInvoke(this, new DataEventArgs(action, payload, messageToken));
-                                    }
-                                    break;
-                                case Tokens.Request:
-                                    {
-                                        var actionLength = pipeStream.ReadI32();
-                                        var action = pipeStream.ReadString(actionLength);
-                                        var payloadLength = pipeStream.ReadI32();
-                                        var payload = pipeStream.ReadString(payloadLength);
-                                        var args = new DataEventArgs(action, payload, messageToken);
-
-                                        DataReceived?.SafeInvoke(this, args);
-                                        send(args.response.action, args.response.payload, Tokens.Response);
-                                    }
-                                    break;
-                                case Tokens.Response:
-                                    {
-                                        var actionLength = pipeStream.ReadI32();
-                                        var action = pipeStream.ReadString(actionLength);
-                                        var payloadLength = pipeStream.ReadI32();
-                                        var payload = pipeStream.ReadString(payloadLength);
-                                        var args = new DataEventArgs(action, payload, messageToken);
-                                        lastResponse = new Response(action, payload);
-
-                                        u.log($"{IsServer}[HANDLE SET] Name:{Name} msg:{messageToken}");
-                                        waitHandle.Set();
-                                    }
-                                    break;
-                                case Tokens.SetTag:
-                                    {
-
-                                        var actionLength = pipeStream.ReadI32();
-                                        var action = pipeStream.ReadString(actionLength);
-                                        var payloadLength = pipeStream.ReadI32();
-                                        var payload = pipeStream.ReadString(payloadLength);
-
-                                        tag = payload;
-
-                                        u.log($"{IsServer}[HANDLE SET] Name:{Name} msg:{messageToken}");
-                                        waitHandle.Set();
-
-                                        //TagReceived?.SafeInvoke(this , EventArgs.Empty);
-                                    }
-                                    break;
-                                case Tokens.RequestTag:
-                                    {
-                                        var actionLength = pipeStream.ReadI32();
-                                        var action = pipeStream.ReadString(actionLength);
-                                        var payloadLength = pipeStream.ReadI32();
-                                        var payload = pipeStream.ReadString(payloadLength);
-                                        send("setTag", tag, Tokens.SetTag);
-                                    }
-                                    break;
-                                default:
-                                    u.log("Unsupported protocol! token:" + messageToken);
-                                    break;
-                            }
-
-
-
-                            u.log($"{IsServer}[LISTEN END] Name:{Name} msg:{messageToken}");
-                        }
-                        catch (Exception ex)
-                        {
-                            IsListening = false;
-                            u.log("Exception in listener!:" + ex.Message);
-                            waitHandle.Set();
-                            Close();
-                        }
-                    }
-
-                    IsListening = false;
-                    u.log($"{IsServer}[LISTEN END] Name:{Name}");
-                    lastResponse = Response.Empty;
-                    waitHandle.Set();
-                    Disconnected?.Invoke(this, null);
-                });
-            }
-            u.error($"{IsServer}[LISTEN FAIL] Name:{Name}");
-            return null;
-        }
-        private Task ListenOnce(Action<DataEventArgs> func)
-        {
-            IsListening = true;
-
-            return Task.Run(() =>
-            {
-                if (pipeStream != null && pipeStream.IsConnected)
-                {
                     try
                     {
-                        var messageLength = pipeStream.ReadI32();
-                        var messageMethod = pipeStream.ReadI32();
-
-                        var messageToken = (Tokens)messageMethod;
-                        switch (messageToken)
+                        while (IsConnected)
                         {
-                            case Tokens.Message:
-                                {
-                                    var actionLength = pipeStream.ReadI32();
-                                    var action = pipeStream.ReadString(actionLength);
-                                    var payloadLength = pipeStream.ReadI32();
-                                    var payload = pipeStream.ReadString(payloadLength);
+                            MessageHeader msgHeader =  pipeStream.ReadMessageHeader();
 
-                                    IsListening = false;
-                                    func.Invoke(new DataEventArgs(action, payload, messageToken));
-                                }
-                                break;
-                            case Tokens.Request:
-                                {
-                                    var actionLength = pipeStream.ReadI32();
-                                    var action = pipeStream.ReadString(actionLength);
-                                    var payloadLength = pipeStream.ReadI32();
-                                    var payload = pipeStream.ReadString(payloadLength);
-                                    var args = new DataEventArgs(action, payload, messageToken);
+                            var buffer = new byte[msgHeader.messageLength];
+                            var cbufferLen = pipeStream.Read(buffer, 0, msgHeader.messageLength);
+                            if(cbufferLen == msgHeader.messageLength)
+                            {
+                                var token = (Tokens)msgHeader.messageMethod;
 
-                                    IsListening = false;
-                                    func.Invoke(new DataEventArgs(action, payload, messageToken));
-                                    send(args.response.action, args.response.payload, Tokens.Response);
-                                }
-                                break;
-                            case Tokens.Response:
+                                if(msgHeader.messageVersion == 0)
                                 {
-                                    var actionLength = pipeStream.ReadI32();
-                                    var action = pipeStream.ReadString(actionLength);
-                                    var payloadLength = pipeStream.ReadI32();
-                                    var payload = pipeStream.ReadString(payloadLength);
+                                    int actionLen = BitConverter.ToInt32(buffer, 0);
+                                    string action = Encoding.ASCII.GetString(buffer, 4, actionLen);
+                                    int payloadLen = BitConverter.ToInt32(buffer, actionLen + 4);
+                                    string payload = Encoding.ASCII.GetString(buffer, actionLen + 8, payloadLen);
 
-                                    var args = new DataEventArgs(action, payload, messageToken);
-                                    lastResponse = new Response(action, payload);
-                                    func.Invoke(args);
-                                    waitHandle.Set();
+                                    switch (token)
+                                    {
+                                        case Tokens.Message:
+                                            {
+                                                var args = new DataEventArgs( action, payload, token);
+                                                DataReceived?.Invoke(this, args);
+                                            }
+                                            break;
+                                        case Tokens.Request:
+                                            {
+                                                var args = new DataEventArgs(action, payload, token);
+                                                DataReceived?.Invoke(this, args);
+
+                                                // set response bytes stream
+                                                var bytes = Util.MergeBytes(
+                                                    args.response.action.ToLengthValuePair(),
+                                                    args.response.payload.ToLengthValuePair()
+                                                    );
+
+                                                Task.Run(() => response(bytes, msgHeader.messageID));
+                                               
+                                            }
+                                            break;
+                                        case Tokens.RequestTag:
+                                            {
+                                                var bytes = Util.MergeBytes(
+                                                    "tag".ToLengthValuePair(),
+                                                     Tag.ToLengthValuePair()
+                                                    );
+                                                response(bytes, msgHeader.messageID);
+                                            }
+                                            break;
+                                        case Tokens.Response:
+                                            {
+                                                var response = new ResponseEventArgs(msgHeader.messageID, action, payload);
+                                                ResponseReceived.Invoke(this, response);
+                                            }
+                                            break;
+                                        default:
+                                            Console.WriteLine($"Undefined behaviour token:{token}!");
+                                            break;
+                                    }
                                 }
+                                else
+                                {
+                                    Console.WriteLine($"Undefined message version! version:{msgHeader.messageVersion}");
+                                    break;
+                                }
+
+                            }else
+                            {
+                                Console.WriteLine("Message receive error!");
                                 break;
-                            default:
-                                u.log("Unsupported protocol! token:" + messageToken);
-                                break;
-                        }
+                            }
+                        }   
+
                     }
                     catch (Exception ex)
                     {
-                        u.log("Exception in listener!:" + ex.Message);
 
+                        IsListening = false;
+                        Console.WriteLine("Exception in listener!:" + ex.Message);
                         Close();
                     }
-                }
-                // clear state...
-                lastResponse = Response.Empty;
-                waitHandle.Set();
-
-                if (!IsConnected)
+                    IsListening = false;
                     Disconnected?.Invoke(this, null);
-            });
+                });
+            }
+            IsListening = false;
+            return null;
         }
     }
 

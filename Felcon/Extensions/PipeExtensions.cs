@@ -9,6 +9,20 @@ namespace Felcon.Core
 {
     public static class PipeExtensions
     {
+        public static MessageHeader ReadMessageHeader(this PipeStream pipeStream)
+        {
+            var buffer = new byte[16];
+            int len = pipeStream.Read(buffer, 0, 16);
+            if (len != 16)
+                throw new Exception("MessageHeader read exception ");
+ 
+            return new MessageHeader(){ 
+                messageLength = BitConverter.ToInt32(buffer,0),
+                messageMethod = BitConverter.ToInt32(buffer,4),
+                messageID     = BitConverter.ToInt32(buffer,8),
+                messageVersion    = BitConverter.ToInt32(buffer,12),
+            };
+        }
         public static Int32 ReadI32(this PipeStream pipeStream)
         {
             var buffer = new byte[4];

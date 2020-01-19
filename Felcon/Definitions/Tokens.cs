@@ -12,7 +12,6 @@ namespace Felcon.Definitions
         Message,
         Request,
         Response,
-        SetTag,
         RequestTag,
     }
 }

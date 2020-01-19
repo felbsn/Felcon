@@ -23,7 +23,10 @@ namespace ServerServiceExample
 
             fServerService.ClientConnected += (id, client) =>
             {
-                // add new client to list view
+                WriteConsole("Client Connect", "id:" + id + " tag:" + client.Tag);
+
+
+
                 clientsListView.Invoke(list =>
                 {
                     var item = new ListViewItem();
@@ -32,7 +35,7 @@ namespace ServerServiceExample
                     list.Items.Add(item);
                 });
  
-                WriteConsole("Client Connect", "id:" + id + " tag:"+ client.Tag);
+              
 
 
 
@@ -49,6 +52,20 @@ namespace ServerServiceExample
                         WriteConsole("Automatic Response", "ClientID:" + id, d.response.action, d.response.payload);
                     }
                 };
+
+                Task.Run(async () =>
+                {
+                    var thisClient = client;
+                    int count = 1;
+                    while (thisClient.IsConnected)
+                    {
+                        thisClient.message("test", "AHAH " + count++);
+                        await Task.Delay(300);
+
+                        if (count == 15) break;
+                    }
+      
+                });
 
 
  
@@ -116,7 +133,7 @@ namespace ServerServiceExample
 
 
                     WriteConsole("Request", selectedItem.Text, actionTextBox.Text, payloadTextBox.Text);
-                    instance?.SendRequestAsync(actionTextBox.Text, payloadTextBox.Text).ContinueWith(response =>
+                    instance?.requestAsync(actionTextBox.Text, payloadTextBox.Text).ContinueWith(response =>
                     {
                         WriteConsole("Response", selectedItem.Text, response.Result.action, response.Result.payload);
                     });
@@ -135,7 +152,7 @@ namespace ServerServiceExample
 
                     int id = (int)selectedItem.Tag;
                     var instance = fServerService.GetInstance(id);
-                    instance?.SendMessage(actionTextBox.Text, payloadTextBox.Text);
+                    instance?.message(actionTextBox.Text, payloadTextBox.Text);
                 }
             }
         }

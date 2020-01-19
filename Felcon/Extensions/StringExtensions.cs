@@ -10,9 +10,9 @@ namespace Felcon.Extensions
     {
         public static byte[]  ToLengthValuePair(this string str)
         {
-            var bAction = Encoding.ASCII.GetBytes(str);
-            var bActionLen = BitConverter.GetBytes(bAction.Length);
-            return bActionLen.Concat(bAction).ToArray();
+            var bValue = Encoding.ASCII.GetBytes(str);
+            var bValueLen = BitConverter.GetBytes(bValue.Length);
+            return bValueLen.Concat(bValue).ToArray();
         }
     }
 }

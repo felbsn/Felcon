@@ -17,13 +17,32 @@ namespace Felcon
         }
         public static readonly Response Empty = new Response("Empty", "");
     }
+
+    public struct MessageHeader
+    {
+       public Int32 messageLength;
+       public Int32 messageMethod;
+       public Int32 messageID;
+       public Int32 messageVersion;
+    }
+
+
+
     public class DataEventArgs : EventArgs
     {
         public readonly string action;
         public readonly string payload;
 
         public readonly Definitions.Tokens method;
+
+
         public Response response;
+
+        public byte[] data;
+        public DataEventArgs(byte[] data)
+        {
+            this.data = data;
+        }
 
         public DataEventArgs(string action, string payload , Definitions.Tokens method)
         {
@@ -34,13 +53,28 @@ namespace Felcon
         }
         public override string ToString()
         {
-            return $"args act:{action} payload:{payload} method:{method}";
+            return $"Args act:{action} payload:{payload} method:{method}";
         }
     }
 
 
 
+    public class ResponseEventArgs : EventArgs
+    {
+        public readonly int messageID;
+        public readonly Response response;
 
+
+        public ResponseEventArgs(int messageID , string action, string payload)
+        {
+            this.messageID = messageID;
+            this.response = new Response(action, payload);
+        }
+        public override string ToString()
+        {
+            return $"Response act:{response.action} payload:{response.payload} messageID:{messageID}";
+        }
+    }
 
 
 }

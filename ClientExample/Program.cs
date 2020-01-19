@@ -24,7 +24,7 @@ namespace ClientExample
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            UniLog.UniLog.log("init client");
+ 
             Application.Run(new ClientWindow());
         }
 
