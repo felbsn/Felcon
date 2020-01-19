@@ -33,7 +33,9 @@ namespace ServerServiceExample
                 });
  
                 WriteConsole("Client Connect", "id:" + id + " tag:"+ client.Tag);
- 
+
+
+
                 client.DataReceived += (s, d) =>
                 {
                     WriteConsole("Data Received" , "ClientID:"+ id , d.action , d.payload);
@@ -47,6 +49,9 @@ namespace ServerServiceExample
                         WriteConsole("Automatic Response", "ClientID:" + id, d.response.action, d.response.payload);
                     }
                 };
+
+
+ 
             };
             fServerService.ClientDisconnected += (id, client) =>
             {
@@ -144,6 +149,8 @@ namespace ServerServiceExample
         private void ServerServiceWindow_Load(object sender, EventArgs e)
         {
             startButton_Click(startButton, null);
+
+           
         }
 
         private void clientsListView_SelectedIndexChanged(object sender, EventArgs e)

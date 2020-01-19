@@ -10,7 +10,7 @@ namespace Felcon.Core
 {
     public class FServerService
     {
-        public event Action<int,FServer> ClientConnected;
+        public event Action<int, FServer> ClientConnected;
         public event Action<int, FServer> ClientDisconnected;
         public Dictionary<int, FServer> servers;
 
@@ -26,12 +26,17 @@ namespace Felcon.Core
         }
 
         public int GetID() => m_serverCounter++;
-        public FServer GetInstance(int id) => servers.TryGetValue(id , out var fServer) ? fServer : null;
- 
-        public void Register(string regPath , string regKey , string executable_path )
+        public FServer GetInstance(int id) => servers.TryGetValue(id, out var fServer) ? fServer : null;
+
+        public IEnumerable<FServer> GetInstances(string Tag) => servers.Values.Where(s => s.Tag == Tag);
+
+        public IEnumerable<FServer> GetAllInstances() => servers.Values;
+        //public FServer GetInstanceWhere(int id) => servers.TryGetValue(id, out var fServer) ? fServer : null;
+
+        public void Register(string regPath, string regKey, string executable_path)
         {
- 
-            Util.RegisterRegistry(regPath , regKey , executable_path);
+
+            Util.RegisterRegistry(regPath, regKey, executable_path);
         }
         public void Start()
         {
@@ -42,25 +47,25 @@ namespace Felcon.Core
             ServerAddress = serverAddress;
             Start();
         }
-
-
         private void CreateConnection()
         {
             var fserver = new FServer(ServerAddress);
-            fserver.Name = "server"+ m_serverCounter;
+            fserver.Name = "server" + m_serverCounter;
             var currentId = GetID();
 
-            servers[currentId] = fserver;
 
-            
             fserver.Connected += (s, e) =>
             {
                 // create new pipes ondemand
+
                 CreateConnection();
 
                 // require tag
-                fserver.RequestTag();
-                ClientConnected?.Invoke(currentId, fserver);
+               // fserver.RequestTag();
+                servers[currentId] = (FServer)s;
+
+
+                ClientConnected?.Invoke(currentId, (FServer)s);
             };
             fserver.Disconnected += (s, e) =>
             {

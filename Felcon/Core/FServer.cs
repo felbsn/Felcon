@@ -31,18 +31,7 @@ namespace Felcon.Core
             });
         }
 
-         //public override Response SendRequest(string action, string xml)
-         //{
-         //    EnsureConnection();
-         //    return base.SendRequest(action, xml);
-         //}
-         //
-         //public bool EnsureConnection()
-         //{
-         //    var res = OpenClientCallBack?.Invoke(PipeAddress);
-         //    return res.HasValue ? res.Value : false;
-         //}
-
+ 
 
     }
 }

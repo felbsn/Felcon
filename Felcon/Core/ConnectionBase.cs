@@ -12,15 +12,11 @@ using Felcon.Utils;
 using Felcon.Definitions;
 
 using u = UniLog.UniLog;
-//Felcon.Core
-
 
 namespace Felcon.Core
 {
-    public abstract class PipeBase
+    public abstract class ConnectionBase
     {
-
-
         // events
         public event EventHandler<EventArgs> Disconnected;
         public event EventHandler<DataEventArgs> DataReceived;
@@ -32,36 +28,24 @@ namespace Felcon.Core
         public string FullPipeName { get => PipeAddress; }
         public bool IsListening { get; protected set; }
 
-        public bool IsMaster = true;
-
         private string tag;
-        public string Tag
-        {
-            get => tag;
-            set => tag = value;
-
-            //set
-            //{
-            //    if (IsConnected) 
-            //        send("setTag", value, Tokens.SetTag);
-            //    tag = value;
-            //}
-        }
+        public string Tag { get => tag; set => tag = value; }
 
         public string Name;
-        public string IsServer = " SERVER::";
+
         // private-protected fields
         private Response lastResponse;
         private readonly EventWaitHandle waitHandle = new EventWaitHandle(true, EventResetMode.ManualReset);
+        
         protected PipeStream pipeStream;
-
+  
 
         // low level send event
         protected void send(string action, string payload, Definitions.Tokens token)
         {
 
-             
-            u.log($"{IsServer}[SEND] Name:{Name} TOKEN:{token}");
+
+            u.log($"[SEND] Name:{Name} TOKEN:{token}");
 
             var bActionPair = action.ToLengthValuePair();
             var bPayloadPair = payload.ToLengthValuePair();
@@ -83,14 +67,14 @@ namespace Felcon.Core
 
         protected void request(string action, string payload, Definitions.Tokens token)
         {
-            u.log($"{IsServer}[REQUEST START] Name:{Name} {token}");
+            u.log($"[REQUEST START] Name:{Name} {token}");
             if (!waitHandle.WaitOne())
             {
-                u.error($"{IsServer} ANOTHER WAIT { token}");
+                u.error($" ANOTHER WAIT { token}");
                 waitHandle.Set();
                 return;
             }
-            u.log($"{IsServer}[REQUEST RESET HANDLE] Name:{Name}");
+            u.log($"[REQUEST RESET HANDLE] Name:{Name}");
             waitHandle.Reset();
 
 
@@ -103,7 +87,7 @@ namespace Felcon.Core
             var bMessage = Util.Merge(bMsgLen, bToken, bActionPair, bPayloadPair);
 
 
-            u.log($"{IsServer}[REQUEST WRITE] Name:{Name} TOKEN:{token}");
+            u.log($"[REQUEST WRITE] Name:{Name} TOKEN:{token}");
             try
             {
                 pipeStream.Write(bMessage, 0, bMessage.Length);
@@ -112,12 +96,12 @@ namespace Felcon.Core
             catch (Exception ex)
             {
                 _ = ex;
-                u.error($"{IsServer}[REQUEST WRITE EXCEPTION] Name:{Name} TOKEN:{token}");
+                u.error($"[REQUEST WRITE EXCEPTION] Name:{Name} TOKEN:{token}");
             }
 
             if (waitHandle.WaitOne())
             {
-                u.log($"{IsServer}[REQUEST DONE] Name:{Name} \r\n\r\n");
+                u.log($"[REQUEST DONE] Name:{Name} \r\n\r\n");
 
             }
             else
@@ -133,23 +117,9 @@ namespace Felcon.Core
         }
         public virtual Response SendRequest(string action, string payload)
         {
-            //if (waitHandle.WaitOne(200))
-            //{ 
-            //    u.log($"[FAILED ANOTHER CALL] Name:{Name}");
-            //    Close();
-            //    return default;
-            //}
-
             request(action, payload, Tokens.Request);
             var response = lastResponse;
             return response;
-
-            //waitHandle.Reset();
-            //send(action, payload, Tokens.Request);
-            //
-            //waitHandle.WaitOne();
-            //var response = lastResponse;
-            //return response;
         }
         public virtual Task<Response> SendRequestAsync(string action, string payload) => Task.Run(() => SendRequest(action, payload));
 
@@ -158,15 +128,9 @@ namespace Felcon.Core
         public virtual string RequestTag()
         {
 
-            request($"{IsServer}{Name}", "reqTag", Tokens.RequestTag);
+            request($"{Name}", "reqTag", Tokens.RequestTag);
             return tag;
         }
-
-
-
-
-
-
         public void Close()
         {
             if (pipeStream != null)
@@ -174,7 +138,7 @@ namespace Felcon.Core
                 waitHandle.Set();
                 if (pipeStream.IsConnected)
                 {
-                    u.log($"{IsServer}[CLOSING] Name:{Name}");
+                    u.log($"[CLOSING] Name:{Name}");
                     pipeStream.WaitForPipeDrain();
                 }
 
@@ -183,23 +147,21 @@ namespace Felcon.Core
                 pipeStream = null;
             }
         }
-        protected PipeBase(string pipeAddress)
+        protected ConnectionBase(string pipeAddress)
         {
             PipeAddress = pipeAddress;
         }
-
         protected void OnConnect()
         {
             Listen();
             Connected?.Invoke(this, EventArgs.Empty);
         }
 
-
         private Task Listen()
         {
             if (IsListening == false)
             {
-                u.success($"{IsServer}[LISTEN START] Name:{Name}");
+                u.success($"[LISTEN START] Name:{Name}");
                 IsListening = true;
                 return Task.Run(() =>
                 {
@@ -212,7 +174,7 @@ namespace Felcon.Core
 
                             var messageToken = (Tokens)messageMethod;
 
-                            u.log($"{IsServer}[LISTEN BEGIN] Name:{Name} msg:{messageToken}");
+                            u.log($"[LISTEN BEGIN] Name:{Name} msg:{messageToken}");
                             switch (messageToken)
                             {
                                 case Tokens.Message:
@@ -245,7 +207,7 @@ namespace Felcon.Core
                                         var args = new DataEventArgs(action, payload, messageToken);
                                         lastResponse = new Response(action, payload);
 
-                                        u.log($"{IsServer}[HANDLE SET] Name:{Name} msg:{messageToken}");
+                                        u.log($"[HANDLE SET] Name:{Name} msg:{messageToken}");
                                         waitHandle.Set();
                                     }
                                     break;
@@ -259,7 +221,7 @@ namespace Felcon.Core
 
                                         tag = payload;
 
-                                        u.log($"{IsServer}[HANDLE SET] Name:{Name} msg:{messageToken}");
+                                        u.log($"[HANDLE SET] Name:{Name} msg:{messageToken}");
                                         waitHandle.Set();
 
                                         //TagReceived?.SafeInvoke(this , EventArgs.Empty);
@@ -281,7 +243,7 @@ namespace Felcon.Core
 
 
 
-                            u.log($"{IsServer}[LISTEN END] Name:{Name} msg:{messageToken}");
+                            u.log($"[LISTEN END] Name:{Name} msg:{messageToken}");
                         }
                         catch (Exception ex)
                         {
@@ -293,89 +255,14 @@ namespace Felcon.Core
                     }
 
                     IsListening = false;
-                    u.log($"{IsServer}[LISTEN END] Name:{Name}");
+                    u.log($"[LISTEN END] Name:{Name}");
                     lastResponse = Response.Empty;
                     waitHandle.Set();
                     Disconnected?.Invoke(this, null);
                 });
             }
-            u.error($"{IsServer}[LISTEN FAIL] Name:{Name}");
+            u.error($"[LISTEN FAIL] Name:{Name}");
             return null;
         }
-        private Task ListenOnce(Action<DataEventArgs> func)
-        {
-            IsListening = true;
-
-            return Task.Run(() =>
-            {
-                if (pipeStream != null && pipeStream.IsConnected)
-                {
-                    try
-                    {
-                        var messageLength = pipeStream.ReadI32();
-                        var messageMethod = pipeStream.ReadI32();
-
-                        var messageToken = (Tokens)messageMethod;
-                        switch (messageToken)
-                        {
-                            case Tokens.Message:
-                                {
-                                    var actionLength = pipeStream.ReadI32();
-                                    var action = pipeStream.ReadString(actionLength);
-                                    var payloadLength = pipeStream.ReadI32();
-                                    var payload = pipeStream.ReadString(payloadLength);
-
-                                    IsListening = false;
-                                    func.Invoke(new DataEventArgs(action, payload, messageToken));
-                                }
-                                break;
-                            case Tokens.Request:
-                                {
-                                    var actionLength = pipeStream.ReadI32();
-                                    var action = pipeStream.ReadString(actionLength);
-                                    var payloadLength = pipeStream.ReadI32();
-                                    var payload = pipeStream.ReadString(payloadLength);
-                                    var args = new DataEventArgs(action, payload, messageToken);
-
-                                    IsListening = false;
-                                    func.Invoke(new DataEventArgs(action, payload, messageToken));
-                                    send(args.response.action, args.response.payload, Tokens.Response);
-                                }
-                                break;
-                            case Tokens.Response:
-                                {
-                                    var actionLength = pipeStream.ReadI32();
-                                    var action = pipeStream.ReadString(actionLength);
-                                    var payloadLength = pipeStream.ReadI32();
-                                    var payload = pipeStream.ReadString(payloadLength);
-
-                                    var args = new DataEventArgs(action, payload, messageToken);
-                                    lastResponse = new Response(action, payload);
-                                    func.Invoke(args);
-                                    waitHandle.Set();
-                                }
-                                break;
-                            default:
-                                u.log("Unsupported protocol! token:" + messageToken);
-                                break;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        u.log("Exception in listener!:" + ex.Message);
-
-                        Close();
-                    }
-                }
-                // clear state...
-                lastResponse = Response.Empty;
-                waitHandle.Set();
-
-                if (!IsConnected)
-                    Disconnected?.Invoke(this, null);
-            });
-        }
     }
-
-
 }

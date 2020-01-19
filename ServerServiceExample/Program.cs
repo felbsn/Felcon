@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
+using u = UniLog.UniLog;
+
 namespace ServerServiceExample
 {
     static class Program
@@ -16,6 +18,10 @@ namespace ServerServiceExample
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+
+            UniLog.UniLog.log("init ss");
+
+
             Application.Run(new ServerServiceWindow());
         }
     }

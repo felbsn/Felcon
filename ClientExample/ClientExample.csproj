@@ -80,6 +80,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Projects\UniLog\UniLog\UniLog.csproj">
+      <Project>{6c935c70-42a7-4adb-97d9-6f9af4a9f546}</Project>
+      <Name>UniLog</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Felcon\Felcon.csproj">
       <Project>{17ed7626-afb0-4e6f-8b82-9b3f7a69f655}</Project>
       <Name>Felcon</Name>

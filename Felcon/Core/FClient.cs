@@ -8,9 +8,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using u = UniLog.UniLog;
+
 namespace Felcon.Core
 {
- 
+
     public class FClient : PipeBase
     {
 
@@ -29,9 +31,18 @@ namespace Felcon.Core
         }
         public void Initialize()
         {
-            clientPipeStream = new NamedPipeClientStream(".", FullPipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
+            PipeSecurity ps = new PipeSecurity();
+            System.Security.Principal.SecurityIdentifier sid = new System.Security.Principal.SecurityIdentifier(System.Security.Principal.WellKnownSidType.WorldSid, null);
+            PipeAccessRule par = new PipeAccessRule(sid, PipeAccessRights.ReadWrite, System.Security.AccessControl.AccessControlType.Allow);
+            ps.AddAccessRule(par);
+
+            clientPipeStream = new NamedPipeClientStream(".", FullPipeName, PipeDirection.InOut, PipeOptions.Asynchronous, System.Security.Principal.TokenImpersonationLevel.Anonymous);
             pipeStream = clientPipeStream;
+
+         
         }
+
+
         public bool Connect(int ms = 100)
         {
             try
@@ -43,12 +54,13 @@ namespace Felcon.Core
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message + " Unable to connect server");
+                u.log(e.Message + " Unable to connect server");
+                u.log("CAN NOT CONNECT ! " + e.Message + " " + e.StackTrace);
                 return false;
             }
         }
 
-        public Task<bool> Connect(int ms   , int delay)
+        public Task<bool> Connect(int ms, int delay)
         {
             return Task.Run(() =>
             {
@@ -63,7 +75,7 @@ namespace Felcon.Core
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine(e.Message + " Unable to connect server");
+                    u.log(e.Message + " Unable to connect server");
                     return false;
                 }
             });
@@ -97,27 +109,26 @@ namespace Felcon.Core
         {
             //return Task.Run(() =>
             //{
-                if (!IsConnected)
+            if (!IsConnected)
+            {
+                if (CheckServerApplication())
                 {
-                    if (CheckServerApplication())
-                    {
-                    //    var t = Connect(2000, 100);
-                    //t.Wait() ;
-                    //return t.Result ;
-                    return Connect(2000);
-                    }
-                    else
-                    {
-                        StartServerApplication();
-
-                       //var t = Connect(2000, 100);
-                       //t.Wait();
-                       //return t.Result;
-                    return Connect(2000);
-                }
+                    var t = Connect(2000, 100);
+                    t.Wait();
+                    return t.Result;
                 }
                 else
-                    return true;
+                {
+                    StartServerApplication();
+
+                    var t = Connect(2000, 100);
+                    t.Wait();
+                    return t.Result;
+                    //return Connect(2000);
+                }
+            }
+            else
+                return true;
             //});
         }
         public bool CheckServerApplication()
@@ -149,11 +160,10 @@ namespace Felcon.Core
                             FileName = exePath
                         };
                         p.Start();
-
                     }
                     else
                     {
-                        throw new Exception($"{ServerProcessName} not found on specified location");
+                        throw new Exception($"{ServerProcessName} not found on specified location \r\n Given path:{exePath}");
 
                     }
                 }

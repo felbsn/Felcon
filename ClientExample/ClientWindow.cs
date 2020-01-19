@@ -53,11 +53,30 @@ namespace ClientExample
 
             pipe.Connected += (s, e) =>
             {
-                WriteConsole("Connected", "evet");
+                UniLog.UniLog.success("Connected", "evet");
 
-                var reqs = pipe.SendRequest("COnnectionReq", "bir seyler");
 
-                WriteConsole("BLOCKING REQ", "jaa" , reqs.action, reqs.payload);
+               //Task.Run(() =>
+               //{
+               //    var rnd = new Random((int)DateTime.Now.Ticks);
+               //    Task.Delay(200).Wait();
+               //    int i = 0;
+               //    //while (pipe.IsConnected)
+               //    //{
+               //    //    var delay = rnd.Next(10, 700);
+               //    //    Task.Delay(delay).Wait();
+               //    //
+               //    //    var Result = pipe.SendRequest("MELABE SERVER " + i, "eved " + i);
+               //    //
+               //    //    WriteConsole("BLOCKING REQ", "jaa", Result.action, Result.payload);
+               //    //
+               //    //
+               //    //    i++;
+               //    //    // var reqs = pipe.SendRequest("COnnectionReq "+ 10, "bir seyler" + 10);
+               //    //    // WriteConsole("BLOCKING REQ", "jaa", reqs.action, reqs.payload);
+               //    //}
+               //
+               //});
 
             };
 
@@ -65,6 +84,9 @@ namespace ClientExample
             {
                 WriteConsole("Disconnect", "oyle");
             };
+
+
+           
         }
 
         private void connectButtton_Click(object sender, EventArgs e)
@@ -132,6 +154,21 @@ namespace ClientExample
                 {
                     WriteConsole("Response", "Server", t.Result.action, t.Result.payload);
                 });
+        }
+
+        private void ClientWindow_Load(object sender, EventArgs e)
+        {
+            UniLog.UniLog.log("start for client");
+            Task.Delay(500).ContinueWith(
+                
+                t => 
+
+                connectButtton.Invoke((c)=>connectButtton.PerformClick())
+                
+                
+                
+                );
+           
         }
     }
 
